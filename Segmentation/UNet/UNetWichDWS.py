@@ -6,6 +6,7 @@ class UNetDWS(nn.Module):
     def __init__(self,input_channels,num_classes,num_filters):
         super(UNetDWS,self).__init__()
 
+
         print("net: UnetTransform")
         
         self.dws_1=DWSConvBnReluBlock(input_channels,num_filters)
