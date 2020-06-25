@@ -16,7 +16,7 @@ from UNet.UNetWichDWS import UNetDWS
 from UNet import UNetTransferLerning  
 from DataLoader import DataLoaderBacteriaBorderWatershed as DataLoader
 import random
-
+import math
 def decode_segmap(image, nc=3):
    
   label_colors = np.array([(0, 0, 0),  # 0=background
@@ -44,8 +44,15 @@ def decode_segmap(image, nc=3):
 
 def instance_decode_map(mask):
     temp=np.expand_dims(mask, axis=2)
-    contours, hierarchy = cv2.findContours(temp, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
+    contours, hierarchy = cv2.findContours(temp, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
     print("count object: ",len(contours))
+
+    avg_area=0.0
+    for cntr in contours:
+        avg_area+=cv2.contourArea(cntr)
+
+    avg_area/=len(contours)
+    print("avg area: ",avg_area)
     _n_clusters=len(contours)
     colors = [plt.cm.Spectral(each) for each in np.linspace(0, 1, _n_clusters)]
     random.shuffle(colors)
@@ -54,7 +61,9 @@ def instance_decode_map(mask):
     for i in range(_n_clusters):
         color=(np.array(colors[i][:3]) * 255).astype(np.uint8)
         color =tuple ([int (color[x]) for x in range(3)])
-        cv2.drawContours(instance_color_map,contours,i,color,-1)
+        cv2.drawContours(instance_color_map,contours,i,color,-1,hierarchy=hierarchy)
+        #cv2.imshow("instance_color_map",instance_color_map)
+        #cv2.waitKey()
 
     instance_color_map=cv2.cvtColor(instance_color_map,cv2.COLOR_RGB2BGR)
     return instance_color_map
@@ -112,21 +121,23 @@ def SegmentationEval3ClassesWithBorder(pathModel):
         cloneMat=cv2.cvtColor(cloneMat,cv2.COLOR_RGB2BGR)
 
         #cloneMat=cv2.resize(cloneMat,(img.shape[1],img.shape[0]))
-        colorSegMap=cv2.resize(colorSegMap,(img.shape[1],img.shape[0]))
+        colorSegMap=cv2.resize(colorSegMap,(round(img.shape[1]/4),round(img.shape[0]/4)))
+        img=cv2.resize(img,(round(img.shape[1]/4),round(img.shape[0]/4)))
 
         cv2.imshow("colorSegMap",colorSegMap)
         cv2.imshow("img",img)
 
-        #cv2.imwrite('./bin/'+str(cnt)+"_bin.png",colorSegMap)
-        #cv2.imwrite('./img/'+str(cnt)+"_im.png",img)
-        #cnt+=1
+        cv2.imwrite('./bin/'+str(cnt)+"_bin.png",colorSegMap)
+        cv2.imwrite('./img/'+str(cnt)+"_im.png",img)
+        #cnt+=
+        print('\n')
         cv2.waitKey()
 
-def InstanceSegmentationEval(pathModel):
+def InstanceSegmentationEval(pathModel,pathDataInput):
     img_size=(256,256)
     device=torch.device("cuda")
 
-    pathDataInput=r'D:\datasets\11_06_2019_wtn\deb'
+
     model=torch.jit.load(pathModel,device)
 
     listFiles=os.listdir(pathDataInput)
@@ -136,14 +147,15 @@ def InstanceSegmentationEval(pathModel):
     cnt=0
 
     for file in listFiles:
-        imgPath=os.path.join(pathDataInput,file)  
+        imgPath=os.path.join(pathDataInput,file) 
+        print(imgPath)
         img=cv2.imread(imgPath,cv2.IMREAD_COLOR)
         img=cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
 
         all_mask=np.zeros((img.shape[0],img.shape[1]),np.uint8)
-
-        cnt_r=round(img.shape[0]/img_size[0])
-        cnt_c= round(img.shape[1]/img_size[1])
+        
+        cnt_r=math.floor(img.shape[0]/img_size[0])
+        cnt_c= math.floor(img.shape[1]/img_size[1])
         for i in range(cnt_r):
             for j in range(cnt_c):
                 roi_img=img[i*img_size[0]:(i+1)*img_size[0],j*img_size[1]:(j+1)*img_size[1]]
@@ -169,21 +181,28 @@ def InstanceSegmentationEval(pathModel):
         instance_color_map=instance_decode_map(all_mask)
         #colorSegMap=decode_segmap(all_mask,2)
 
+        #instance_color_map=cv2.resize(instance_color_map,(round(img.shape[1]/4),round(img.shape[0]/4)))
+        #all_mask=cv2.resize(all_mask,(round(img.shape[1]/4),round(img.shape[0]/4)))
+        #img=cv2.resize(img,(round(img.shape[1]/4),round(img.shape[0]/4)))
 
         cv2.imshow("mask",all_mask)
         cv2.imshow("instance_color_map",instance_color_map)
         cv2.imshow("img",img)
 
-        #cv2.imwrite('./bin/'+str(cnt)+"_bin.png",instance_color_map)
-        #cv2.imwrite('./img/'+str(cnt)+"_im.png",img)
-        #cnt+=1
+        #cv2.imwrite('./bin_vgg_adabatch/'+"vgg_adabt_"+str(cnt)+"_bin.png",instance_color_map)
+        #cv2.imwrite('./img/'+"static6_"+str(cnt)+"_img.png",img)
+        print('./img/'+"static6"+str(cnt)+"_img.png")
+        cnt+=1
+        print('\n')
         cv2.waitKey()
+
+
 
 
 if __name__=="__main__":
    
-    #SegmentationEval3ClassesWithBorder("./TheBestModels/UNetVGG19BN_1/UNetVGG_0.779963684605863_.pt")
-    InstanceSegmentationEval("./TheBestModels/d2/UNetVGG19BN/UNetVGG_0.770019063711179_.pt")
+    #InstanceSegmentationEval("D:/Projects/Segmentation models/TheBestModels/d2/adabatchvgg19/AB_unet_vgg_2.pt",r'D:\datasets\11_06_2019_wtn\deb3')
+    InstanceSegmentationEval("D:/Projects/Segmentation models/TheBestModels/d2/UNetVGG19BN/UNetVGG_0.770019063711179_.pt",r'D:\datasets\11_06_2019_wtn\deb2')
    
 
 

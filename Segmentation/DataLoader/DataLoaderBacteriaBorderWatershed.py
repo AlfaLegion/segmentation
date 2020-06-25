@@ -44,6 +44,8 @@ class DataLoaderBacteriaBorderWatershed(torch.utils.data.Dataset):
         input=cv2.imread(datagramm["image"],cv2.IMREAD_COLOR)
         input = cv2.cvtColor(input, cv2.COLOR_BGR2RGB)
 
+        original_img=np.copy(input)
+
         border=cv2.imread(datagramm["border"],cv2.IMREAD_GRAYSCALE)
         #D:\datasets\data-science-bowl-2018\wich_border\stage1_train\00071198d059ba7f5914a526d124d28e6d010c92466da21d4a04cd5413362552\masks
         generalMask=np.zeros_like(border)
@@ -75,38 +77,45 @@ class DataLoaderBacteriaBorderWatershed(torch.utils.data.Dataset):
 
 
         #cv2.imshow("input",augmented["image"])
-        ##cv2.imshow("border",border*)
-        #cv2.imshow("generalMask",augmented["mask"]*100)
-        #cv2.waitKey()
+        #cv2.imshow("original_img",original_img)
+        ###cv2.imshow("border",border*)
+
+        #cv2.imshow("generalMask",augmented["mask"]*127)
+        #if(cv2.waitKey()==27):
+        #    cv2.imwrite(str(index)+"src.png",original_img)
+        #    cv2.imwrite(str(index)+"aug src.png",augmented["image"])
+        #    cv2.imwrite(str(index)+"aug_msk.png",augmented["mask"]*127)
         return input_tensor, label_tensor
 
 
 
 
 
+def augmentation(img_size):
+    return albu.Compose([
+        #spatial wise
+        #albu.RandomCrop(img_size[0],img_size[1]),
+        albu.RandomResizedCrop(img_size[0],img_size[1],
+                               interpolation=cv2.INTER_NEAREST),
+        albu.Rotate(interpolation=cv2.INTER_NEAREST),
+        albu.HorizontalFlip(),
+        albu.ElasticTransform(alpha_affine=10,interpolation=cv2.INTER_NEAREST),
+        albu.OpticalDistortion(interpolation=cv2.INTER_NEAREST),
 
+        #pixel transform
+        albu.RandomGamma((100,180),p=0.8),
+        albu.Blur(5),
+        albu.RandomBrightness(limit=(0.05,0.20)),
+        albu.RandomContrast(limit=(0,0.20),p=0.5),
+        albu.MotionBlur( blur_limit =7),
+
+        ])
 
 
 
 if __name__=="__main__":
     img_size=(256,256)
-    transform=albu.Compose([
-         #albu.RandomCrop(img_size[0],img_size[1]),
-         albu.RandomResizedCrop(img_size[0],img_size[1],interpolation=cv2.INTER_NEAREST,ratio=(1,1.2)),
-         
-
-        #albu.Rotate(interpolation=cv2.INTER_NEAREST),
-        #albu.HorizontalFlip(),
-        #albu.ElasticTransform(alpha_affine=10,interpolation=cv2.INTER_NEAREST),
-        #albu.OpticalDistortion(interpolation=cv2.INTER_NEAREST),
-
-        #pixel transform
-        albu.RandomGamma((70,150),p=1),
-         albu.Blur(5),
-         albu.RandomBrightness(limit=(0.1,0.2)),
-         albu.RandomContrast(limit=(0,0.2),p=1),
-         albu.MotionBlur( blur_limit =7),
-        ])
+    transform=augmentation(img_size)
     dataset=DataLoaderBacteriaBorderWatershed(r'D:\datasets\data-science-bowl-2018\wich_border\stage1_train',transform=transform)
     #data=dataset[2]
     
