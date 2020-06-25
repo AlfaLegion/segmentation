@@ -78,7 +78,6 @@ def augmentation(img_size):
         ])
 
 
-
 def trainUNetVGG19BN(train_data,test_train,save_model_name,num_epoch,batch_size,lr,momentum,treshold_f1_class_object=0.85):
     
     img_size=(256,256)
@@ -334,17 +333,14 @@ def visdom_exmpl():
 
 if __name__=="__main__":
 
-    #trainUNetVGG19BN(r'D:\datasets\data-science-bowl-2018\wich_border_2\stage1_train',
-    #r'D:\datasets\data-science-bowl-2018\wich_border_2\test',
-    #'./TheBestModels/d2/UNetVGG19BN/UNetVGG.pt',
-    #      num_epoch=1,batch_size=9,lr=0.0004,momentum=0.95,treshold_f1_class_object=0.01)
+    trainUNetVGG19BN(r'D:\datasets\data-science-bowl-2018\wich_border_2\stage1_train',
+    r'D:\datasets\data-science-bowl-2018\wich_border_2\test',
+    './TheBestModels/d2/UNetVGG19BN/UNetVGG.pt',
+          num_epoch=1,batch_size=9,lr=0.0004,momentum=0.95,treshold_f1_class_object=0.01)
 
     #trainUNetResNet(r'D:\datasets\data-science-bowl-2018\wich_border_2\stage1_train',
     #                r'D:\datasets\data-science-bowl-2018\wich_border_2\test',
     #                'resnet34',
     #                "./TheBestModels/d2/UNetResNet34/UNetResNet34.pt",
     #      num_epoch=1,batch_size=6,lr=0.0004,momentum=0.95,treshold_f1_class_object=0.01)
-
-
-
 
