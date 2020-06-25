@@ -79,7 +79,12 @@ def augmentation(img_size):
 
         ])
 
-def trainUNet(train_data,test_data,type_resnet,save_model_name,num_epoch,batch_size,lr,momentum,betta_inc_bs,gamma_decay_lr,treshold_f1_class_object=0.85):
+
+#
+#factor_epoch - число эпох, когда нужно увеличить размер партии на betta_inc_bs
+#max_batch_size - предельный размер партии.
+#
+def trainUNet(train_data,test_data,type_coder,save_model_name,num_epoch,start_batch_size,lr,momentum,betta_inc_bs,gamma_decay_lr,treshold_f1_class_object=0.85,factor_epoch=10,max_batch_size=9):
     
     img_size=(256,256)
     num_workers_train=6
@@ -95,7 +100,7 @@ def trainUNet(train_data,test_data,type_resnet,save_model_name,num_epoch,batch_s
 
 
     dataLoader=torch.utils.data.DataLoader(dataset=DataSet,
-                                           batch_size=batch_size,
+                                           batch_size=start_batch_size,
                                            shuffle =True,
                                            num_workers=num_workers_train)
     dataLoaderTest=torch.utils.data.DataLoader(dataset=DataSetTest,
@@ -103,9 +108,12 @@ def trainUNet(train_data,test_data,type_resnet,save_model_name,num_epoch,batch_s
                                            shuffle =False,
                                            num_workers=num_workers_test)
     print("\nInitialization net...")
-    #model=Unet.UNet(3,3,32).cuda()
-    #model=UNetTransferLerning.UNetResNet(3,3,64,type_resnet).cuda()
-    model=UNetTransferLerning.UNetVGG(3,3,64).cuda()
+
+    if type_coder=='vgg19bn':
+        model=UNetTransferLerning.UNetVGG(3,3,64).cuda()
+    else:
+        model=UNetTransferLerning.UNetResNet(3,3,64,type_coder).cuda()
+    
     
     print("Complete")
 
@@ -113,8 +121,9 @@ def trainUNet(train_data,test_data,type_resnet,save_model_name,num_epoch,batch_s
 
     optimizer=torch.optim.SGD(model.parameters(),lr=lr,momentum=momentum,weight_decay=0.0005)
    
-    #opt_sheduler=torch.optim.lr_scheduler.StepLR(optimizer,step_size=10,gamma=gamma_decay_lr)
-    new_batch_size=batch_size
+    if gamma_decay_lr is not None:
+        opt_sheduler=torch.optim.lr_scheduler.StepLR(optimizer,step_size=10,gamma=gamma_decay_lr)
+    new_batch_size=start_batch_size
     model.train()
     print("\nTrain...\n")
 
@@ -222,7 +231,7 @@ if __name__=="__main__":
     trainUNet(r'D:\datasets\data-science-bowl-2018\wich_border_2\stage1_train',
           r'D:\datasets\data-science-bowl-2018\wich_border_2\test','resnet34',
           "D:/Projects/Segmentation models/TheBestModels/d2/adabatchvgg19/AB_unet_vgg_3.pt",
-          num_epoch=300,batch_size=1,lr=0.0004,momentum=0.99,betta_inc_bs=1,gamma_decay_lr=0.7,treshold_f1_class_object=0.82)
+          num_epoch=300,start_batch_size=1,lr=0.0004,momentum=0.99,betta_inc_bs=1,gamma_decay_lr=None,treshold_f1_class_object=0.82)
    # visdom_exmpl()
 
 
